@@ -33,16 +33,35 @@ pub struct Graph{
     pub edges: Vec<Edge>,
 }
 impl Graph {
-    pub fn add_node_wh_id(&mut self, id: i32, neighbors: Vec<i32>) {
-        //проверка на уникальность
-        let mut not_is_free = true;
-        while not_is_free{
-            for node in self.nodes.iter_mut(){
-                if id == node.id{
-                    return;
-                }
+    pub fn del_node_by_index(&mut self, index: usize) -> Result<i32, String> {
+        if index >= self.nodes.len() {
+            return Err(format!("Индекс {index} вне диапазона"));
+        }
+
+        let removed_id = self.nodes.remove(index).id;
+        for node in self.nodes.iter_mut() {
+            node.neighbors.retain(|&x| x != removed_id);
+        }
+
+        Ok(removed_id)
+    }
+
+    pub fn del_node_by_id(&mut self, id: i32) -> Option<usize> {
+        let index = self.nodes.iter().position(|node| node.id == id);
+
+        self.nodes.retain(|node| node.id != id);
+
+        for node in self.nodes.iter_mut(){
+            if node.neighbors.contains(&id){
+                node.neighbors.retain(|&x| x != id);
             }
-            not_is_free = false;
+        }
+        index
+    }
+    pub fn add_node_wh_id(&mut self, id: i32, neighbors: Vec<i32>) -> Result<(), String> {
+        //проверка на уникальность
+        if self.nodes.iter().any(|node| node.id == id) {
+            return Err(format!("Вершина с ID {id} уже существует"));
         }
 
         //добовление соседям
@@ -53,6 +72,7 @@ impl Graph {
         }
 
         self.nodes.push(Node{id, neighbors});//создание самой заметки
+        Ok(())
     }
     pub fn add_node(&mut self, neighbors: Vec<i32>) {
         let id = self.generate_id();
